@@ -1,0 +1,27 @@
+<resources>
+    <string name="app_name">Cortica App</string>
+    <string name="get_started">Get Started</string>
+
+    <string name="loading_local_images">Loading local images..</string>
+    <string name="loading_facebook_images">Loading Facebook images..</string>
+    <string name="should_load_facebook_images">Would you like to load images from Facebook?</string>
+
+    <string name="facebook_app_id">628246177337293</string>
+    <string name="continue_to_main">No</string>
+    <string name="local_images">Local Images</string>
+    <string name="facebook_images">Facebook Images</string>
+    <string name="no_images_to_show">No images to show!\nPlease add permissions or log in to facebook to see images.</string>
+    <string name="local_images_info">Number of local images: %1$s\n\nAmount of time taken to insert local images to DB: %2$s ms</string>
+    <string name="facebook_images_info">\n\nNumber of Facebook images: %1$s\n\nAmount of time taken to insert Facebook images to DB: %2$s ms</string>
+
+    <!-- Shared Preferences Keys -->
+    <string name="sp_were_local_images_loaded">local_images_loaded</string>
+    <string name="sp_were_facebook_images_loaded">facebook_images_loaded</string>
+    <string name="sp_number_of_local_images">number_of_local_images</string>
+    <string name="sp_number_of_facebook_images">number_of_facebook_images</string>
+    <string name="sp_amount_of_time_taken_local">amount_of_time_taken_local</string>
+    <string name="sp_amount_of_time_taken_facebook">amount_of_time_taken_facebook</string>
+    <string name="preference_file_key">shared_prefs</string>
+    <string name="no_images_error">No images to show</string>
+    <string name="back">Back</string>
+</resources>
