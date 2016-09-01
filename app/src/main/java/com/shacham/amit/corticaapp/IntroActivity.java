@@ -164,7 +164,7 @@ public class IntroActivity extends Activity implements
                         });
 
                 Bundle parameters = new Bundle();
-                parameters.putString("fields", "photos{link}");
+                parameters.putString("fields", "photos{created_time, images}");
                 request.setParameters(parameters);
                 request.executeAsync();
             }

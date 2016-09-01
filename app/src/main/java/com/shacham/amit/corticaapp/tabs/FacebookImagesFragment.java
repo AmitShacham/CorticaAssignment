@@ -1,6 +1,5 @@
 package com.shacham.amit.corticaapp.tabs;
 
-import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
@@ -8,17 +7,11 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.GridView;
-import android.widget.TextView;
 
-import com.shacham.amit.corticaapp.FullscreenImageActivity;
 import com.shacham.amit.corticaapp.R;
 import com.shacham.amit.corticaapp.database.DatabaseContract;
 import com.shacham.amit.corticaapp.database.DatabaseHelper;
 import com.shacham.amit.corticaapp.database.DatabaseImage;
-
-import java.util.ArrayList;
 
 public class FacebookImagesFragment extends TabFragment {
 
@@ -74,7 +67,8 @@ public class FacebookImagesFragment extends TabFragment {
             String imageName = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseContract.FacebookImageDBEntry.COLUMN_NAME_IMAGE_NAME));
             String imageUriString = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseContract.FacebookImageDBEntry.COLUMN_NAME_IMAGE_URI));
             Uri imageUri = Uri.parse(imageUriString);
-            mImageList.add(new DatabaseImage(imageUri, null));
+            String imageDate = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseContract.LocalImageDBEntry.COLUMN_NAME_IMAGE_DATE));
+            mImageList.add(new DatabaseImage(imageUri, imageDate));
         } while (cursor.moveToNext());
 
         cursor.close();

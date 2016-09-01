@@ -18,7 +18,7 @@ import java.util.Date;
 
 public class LoadLocalImagesIntoDataBaseAsyncTask extends AsyncTask<Void, Void, Void> {
 
-    public static final String DATE_FORMAT = "dd/MM/yyyy hh:mm:ss";
+    public static final SimpleDateFormat FORMATTER = new SimpleDateFormat("dd/MM/yyyy hh:mm:ss");
 
     private Activity mActivity;
     private AsyncTaskCallback mCallback;
@@ -55,7 +55,6 @@ public class LoadLocalImagesIntoDataBaseAsyncTask extends AsyncTask<Void, Void, 
         ContentValues values = new ContentValues();
         mCursor.moveToFirst();
         Calendar calendar = Calendar.getInstance();
-        SimpleDateFormat formatter = new SimpleDateFormat(DATE_FORMAT);
         do {
             int columnIndex = mCursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID);
             values.put(DatabaseContract.LocalImageDBEntry.COLUMN_NAME_IMAGE_NAME, columnIndex);
@@ -63,7 +62,7 @@ public class LoadLocalImagesIntoDataBaseAsyncTask extends AsyncTask<Void, Void, 
             int dateColumn = mCursor.getColumnIndex(MediaStore.Images.Media.DATE_TAKEN);
             int dateInMS = mCursor.getInt(dateColumn);
             calendar.setTimeInMillis(dateInMS);
-            values.put(DatabaseContract.LocalImageDBEntry.COLUMN_NAME_IMAGE_DATE, formatter.format(calendar.getTime()));
+            values.put(DatabaseContract.LocalImageDBEntry.COLUMN_NAME_IMAGE_DATE, FORMATTER.format(calendar.getTime()));
 
             Uri imageUri = Uri.withAppendedPath(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "" + mCursor.getInt(columnIndex));
             values.put(DatabaseContract.LocalImageDBEntry.COLUMN_NAME_IMAGE_URI, imageUri.toString());

@@ -24,17 +24,33 @@ public class Wrapper {
 
         public class Data {
 
-            @SerializedName("link")
-            private String link;
+            @SerializedName("images")
+            private List<Image> images;
             @SerializedName("id")
             private String id;
+            @SerializedName("created_time")
+            private String imageDate;
 
-            public String getLink() {
-                return link;
+            public List<Image> getImages() {
+                return images;
             }
 
             public String getId() {
                 return id;
+            }
+
+            public String getImageDate() {
+                return imageDate;
+            }
+
+            public class Image {
+
+                @SerializedName("source")
+                private String imageUri;
+
+                public String getImageUri() {
+                    return imageUri;
+                }
             }
         }
     }
