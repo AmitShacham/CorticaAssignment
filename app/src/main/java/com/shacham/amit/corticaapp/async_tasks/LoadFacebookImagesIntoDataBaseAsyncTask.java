@@ -11,6 +11,8 @@ import com.google.gson.Gson;
 import com.shacham.amit.corticaapp.database.DatabaseContract;
 import com.shacham.amit.corticaapp.database.DatabaseHelper;
 import com.shacham.amit.corticaapp.json_parsing.Wrapper;
+import com.sromku.simple.fb.entities.Image;
+import com.sromku.simple.fb.entities.Photo;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -20,20 +22,19 @@ import java.util.List;
 
 public class LoadFacebookImagesIntoDataBaseAsyncTask extends AsyncTask<Void, Void, Void> {
 
-    private static final SimpleDateFormat INPUT_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss+SSSS");
     private static final SimpleDateFormat OUTPUT_FORMAT = LoadLocalImagesIntoDataBaseAsyncTask.FORMATTER;
 
     private Activity mActivity;
     private AsyncTaskCallback mCallback;
-    private String mJsonResponse;
+    private List<Photo> mListOfImages;
     private int mNumberOfImages;
     private long mStartTime;
     private long mEndTime;
 
-    public LoadFacebookImagesIntoDataBaseAsyncTask(Activity activity, AsyncTaskCallback callback, String jsonResponse) {
+    public LoadFacebookImagesIntoDataBaseAsyncTask(Activity activity, AsyncTaskCallback callback, List<Photo> listOfImages) {
         mActivity = activity;
         mCallback = callback;
-        mJsonResponse = jsonResponse;
+        mListOfImages = listOfImages;
     }
 
     @Override
@@ -48,38 +49,26 @@ public class LoadFacebookImagesIntoDataBaseAsyncTask extends AsyncTask<Void, Voi
 
         mStartTime = System.currentTimeMillis();
         ContentValues values = new ContentValues();
-        Gson gson = new Gson();
-        Wrapper wrapper = gson.fromJson(mJsonResponse, Wrapper.class);
-        List<Wrapper.Photos.Data> listOfPhotos = wrapper.getPhotos().getData();
-        for (Wrapper.Photos.Data photoData : listOfPhotos) {
-            values.put(DatabaseContract.FacebookImageDBEntry.COLUMN_NAME_IMAGE_NAME, photoData.getId());
-            List<Wrapper.Photos.Data.Image> imagesList = photoData.getImages();
-            for (Wrapper.Photos.Data.Image image : imagesList) {
-                values.put(DatabaseContract.FacebookImageDBEntry.COLUMN_NAME_IMAGE_URI, image.getImageUri());
+        for (Photo photo : mListOfImages) {
+            values.put(DatabaseContract.FacebookImageDBEntry.COLUMN_NAME_IMAGE_NAME, photo.getId());
+            List<Image> imagesList = photo.getImages();
+            if (imagesList.size() > 0) {
+                for (Image image : imagesList) {
+                    values.put(DatabaseContract.FacebookImageDBEntry.COLUMN_NAME_IMAGE_URI, image.getSource());
+                }
             }
-
-            String imageDate = photoData.getImageDate();
+            Date imageDate = photo.getCreatedTime();
             values.put(DatabaseContract.FacebookImageDBEntry.COLUMN_NAME_IMAGE_DATE, changeDateFormat(imageDate));
 
             db.insert(DatabaseContract.FacebookImageDBEntry.TABLE_NAME, null, values);
         }
 
         mEndTime = System.currentTimeMillis();
-        mNumberOfImages = listOfPhotos.size();
+        mNumberOfImages = mListOfImages.size();
     }
 
-    public String changeDateFormat(String dateString) {
-        Date date;
-        String result = null;
-
-        try {
-            date = INPUT_FORMAT.parse(dateString);
-            result = OUTPUT_FORMAT.format(date);
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
-
-        return result;
+    public String changeDateFormat(Date date) {
+        return OUTPUT_FORMAT.format(date);
     }
 
     @Override

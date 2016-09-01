@@ -18,23 +18,20 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import com.facebook.AccessToken;
-import com.facebook.CallbackManager;
-import com.facebook.FacebookCallback;
-import com.facebook.FacebookException;
 import com.facebook.FacebookSdk;
-import com.facebook.GraphRequest;
-import com.facebook.GraphResponse;
-import com.facebook.login.LoginResult;
-import com.facebook.login.widget.LoginButton;
 import com.shacham.amit.corticaapp.async_tasks.LoadFacebookImagesIntoDataBaseAsyncTask;
 import com.shacham.amit.corticaapp.async_tasks.LoadLocalImagesIntoDataBaseAsyncTask;
 import com.shacham.amit.corticaapp.database.DatabaseContract;
 import com.shacham.amit.corticaapp.database.DatabaseHelper;
+import com.sromku.simple.fb.Permission;
+import com.sromku.simple.fb.SimpleFacebook;
+import com.sromku.simple.fb.SimpleFacebookConfiguration;
+import com.sromku.simple.fb.entities.Photo;
+import com.sromku.simple.fb.listeners.OnActionListener;
+import com.sromku.simple.fb.listeners.OnLoginListener;
 
-import org.json.JSONObject;
+import java.util.List;
 
 public class IntroActivity extends Activity implements
         LoadLocalImagesIntoDataBaseAsyncTask.AsyncTaskCallback,
@@ -43,11 +40,12 @@ public class IntroActivity extends Activity implements
 
     private static final int MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 1;
 
+    private SimpleFacebook mSimpleFacebook;
+
     private Button mGetStartedButton;
     private LinearLayout mLoadingLayout;
-    private LoginButton mFacebookLoginButton;
-    private CallbackManager mCallbackManager;
     private LinearLayout mFacebookLoginLayout;
+    private Button mGetFacebookImagesButton;
     private Button mNoFacebookImagesButton;
 
     @Override
@@ -58,8 +56,7 @@ public class IntroActivity extends Activity implements
 
         initViews();
         initListeners();
-
-        mCallbackManager = CallbackManager.Factory.create();
+        initSimpleFacebook();
 
         if (wereImagesLoaded()) {
             startMainActivity();
@@ -69,14 +66,23 @@ public class IntroActivity extends Activity implements
     private void initViews() {
         mGetStartedButton = (Button) findViewById(R.id.get_started_button);
         mLoadingLayout = (LinearLayout) findViewById(R.id.loading_layout);
-        mFacebookLoginButton = (LoginButton) findViewById(R.id.facebook_login_button);
         mFacebookLoginLayout = (LinearLayout) findViewById(R.id.facebook_login_layout);
+        mGetFacebookImagesButton = (Button) findViewById(R.id.get_facebook_images_button);
         mNoFacebookImagesButton = (Button) findViewById(R.id.no_facebook_images_button);
     }
 
     private void initListeners() {
         mGetStartedButton.setOnClickListener(this);
+        mGetFacebookImagesButton.setOnClickListener(this);
         mNoFacebookImagesButton.setOnClickListener(this);
+    }
+
+    private void initSimpleFacebook() {
+        SimpleFacebookConfiguration configuration = new SimpleFacebookConfiguration.Builder()
+                .setAppId(getString(R.string.facebook_app_id))
+                .setPermissions(new Permission[]{Permission.USER_PHOTOS})
+                .build();
+        SimpleFacebook.setConfiguration(configuration);
     }
 
     private boolean wereImagesLoaded() {
@@ -95,6 +101,9 @@ public class IntroActivity extends Activity implements
         switch (v.getId()) {
             case R.id.get_started_button:
                 checkForPermission();
+                break;
+            case R.id.get_facebook_images_button:
+                loginToFacebook();
                 break;
             case R.id.no_facebook_images_button:
                 startMainActivity();
@@ -141,63 +150,82 @@ public class IntroActivity extends Activity implements
         editor.putBoolean(getString(R.string.sp_were_local_images_loaded), true);
         editor.putInt(getString(R.string.sp_number_of_local_images), numberOfImages);
         editor.putLong(getString(R.string.sp_amount_of_time_taken_local), amountOfTimeTaken);
-        editor.commit();
+        editor.apply();
 
         askForFacebookImages();
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        mSimpleFacebook = SimpleFacebook.getInstance(this);
+    }
+
     private void askForFacebookImages() {
         mFacebookLoginLayout.setVisibility(View.VISIBLE);
+    }
 
-        mFacebookLoginButton.setReadPermissions("user_photos");
-        mFacebookLoginButton.registerCallback(mCallbackManager, new FacebookCallback<LoginResult>() {
+    private void loginToFacebook() {
+        mSimpleFacebook.login(new OnLoginListener() {
             @Override
-            public void onSuccess(LoginResult loginResult) {
-                GraphRequest request = GraphRequest.newMeRequest(
-                        AccessToken.getCurrentAccessToken(),
-                        new GraphRequest.GraphJSONObjectCallback() {
-                            @Override
-                            public void onCompleted(JSONObject object, GraphResponse response) {
-                                String responseString = response.getRawResponse();
-                                loadFacebookImagesToDataBase(responseString);
-                            }
-                        });
-
-                Bundle parameters = new Bundle();
-                parameters.putString("fields", "photos{created_time, images}");
-                request.setParameters(parameters);
-                request.executeAsync();
+            public void onLogin(String accessToken, List<Permission> acceptedPermissions, List<Permission> declinedPermissions) {
+                getImages();
             }
 
             @Override
             public void onCancel() {
-                // Do nothing
+                startMainActivity();
             }
 
             @Override
-            public void onError(FacebookException exception) {
-                Toast.makeText(IntroActivity.this, "Problem with Facebook login. Images from Facebook will not be shown.", Toast.LENGTH_LONG).show();
+            public void onException(Throwable throwable) {
+                startMainActivity();
+            }
+
+            @Override
+            public void onFail(String reason) {
+                startMainActivity();
             }
         });
     }
 
-    private void loadFacebookImagesToDataBase(String responseString) {
+    public void getImages() {
+        Bundle params = new Bundle();
+        params.putCharSequence("fields", "created_time,images");
+        params.putCharSequence("limit", "99");
+
+        mSimpleFacebook.get("me", "photos", params, new OnActionListener<List<Photo>>() {
+            @Override
+            public void onComplete(List<Photo> response) {
+                super.onComplete(response);
+                loadFacebookImagesToDataBase(response);
+            }
+
+            @Override
+            public void onException(Throwable throwable) {
+                super.onException(throwable);
+                startMainActivity();
+            }
+
+            @Override
+            public void onFail(String reason) {
+                super.onFail(reason);
+                startMainActivity();
+            }
+        });
+    }
+
+    private void loadFacebookImagesToDataBase(List<Photo> response) {
         mLoadingLayout.setVisibility(View.VISIBLE);
         ((TextView) mLoadingLayout.findViewById(R.id.loading_text)).setText(getString(R.string.loading_facebook_images));
-        LoadFacebookImagesIntoDataBaseAsyncTask asyncTask = new LoadFacebookImagesIntoDataBaseAsyncTask(this, this, responseString);
+        LoadFacebookImagesIntoDataBaseAsyncTask asyncTask = new LoadFacebookImagesIntoDataBaseAsyncTask(this, this, response);
         asyncTask.execute();
     }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        mSimpleFacebook.onActivityResult(requestCode, resultCode, data);
         super.onActivityResult(requestCode, resultCode, data);
-        mCallbackManager.onActivityResult(requestCode, resultCode, data);
-    }
-
-    private void startMainActivity() {
-        Intent intent = new Intent(this, MainActivity.class);
-        startActivity(intent);
-        finish();
     }
 
     @Override
@@ -209,8 +237,14 @@ public class IntroActivity extends Activity implements
         editor.putBoolean(getString(R.string.sp_were_facebook_images_loaded), true);
         editor.putInt(getString(R.string.sp_number_of_facebook_images), numberOfImages);
         editor.putLong(getString(R.string.sp_amount_of_time_taken_facebook), amountOfTimeTaken);
-        editor.commit();
+        editor.apply();
 
         startMainActivity();
+    }
+
+    private void startMainActivity() {
+        Intent intent = new Intent(this, MainActivity.class);
+        startActivity(intent);
+        finish();
     }
 }

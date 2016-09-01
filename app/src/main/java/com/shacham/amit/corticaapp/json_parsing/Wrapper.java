@@ -53,5 +53,39 @@ public class Wrapper {
                 }
             }
         }
+
+        @SerializedName("paging")
+        private Paging paging;
+
+        public class Paging {
+
+            @SerializedName("cursors")
+            private Cursors cursors;
+
+            public Cursors getCursors() {
+                return cursors;
+            }
+
+            public class Cursors {
+
+                @SerializedName("after")
+                private String after;
+
+                public String getAfter() {
+                    return after;
+                }
+            }
+
+            @SerializedName("next")
+            private String next;
+
+            public String getNext() {
+                return next;
+            }
+        }
+
+        public Paging getPaging() {
+            return paging;
+        }
     }
 }
